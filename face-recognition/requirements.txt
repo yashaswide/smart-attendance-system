@@ -1,5 +1,5 @@
 opencv-python
-face-recognition
+opencv-contrib-python
 numpy
 pandas
 scikit-learn

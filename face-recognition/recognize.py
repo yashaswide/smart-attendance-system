@@ -1,50 +1,75 @@
-import face_recognition
-import os
-
-known_encodings=[]
-known_names=[]
-
-dataset="dataset"
-
-for person in os.listdir(dataset):
-    person_folder=os.path.join(dataset, person)
-
-    for image_name in os.listdir(person_folder):
-        img_path=os.path.join(person_folder,image_name)
-
-        image=face_recognition.load_image_file(img_path)
-        encoding=face_recognition.face_encodings(image)[0]
-
-        known_encodings.append(encoding)
-        known_names.append(person)
-
-print("Training loaded successfully")
-
 import cv2
-import face_recognition
 
-video=cv2.VideoCapture(0)
+label_map = {
+    0:"YASHASWI DE"
+}
+
+recognizer = cv2.face.LBPHFaceRecognizer_create()
+recognizer.read("trainer.yml")
+
+face_cascade=cv2.CascadeClassifier(
+    cv2.data.haarcascades+
+    "haarcascade_frontalface_default.xml"
+)
+
+cam=cv2.VideoCapture(0)
 
 while True:
-    ret,frame=video.read()
 
-    rgb=frame[:,:,::-1]
+    ret,frame=cam.read()
 
-    locations=face_recognition.face_locations(rgb)
-    encodings=face_recognition.face_encodings(rgb,locations)
+    gray=cv2.cvtColor(
+        frame,
+        cv2.COLOR_BGR2GRAY
+    )
 
-    for face_encoding in encodings:
+    faces=face_cascade.detectMultiScale(
+        gray,
+        1.3,
+        5
+    )
 
-        matches=face_recognition.compare_faces(
-            known_encodings,
-            face_encoding
+    for (x,y,w,h) in faces:
+
+        id_, confidence = recognizer.predict(
+            gray[y:y+h,x:x+w]
         )
 
-        if True in matches:
-            index=matches.index(True)
-            print("Recognized:",known_names[index])
+        name=label_map.get(
+            id_,
+            "Unknown"
+        )
 
-    cv2.imshow("Attendance",frame)
+        print(
+            f"{name} recognized"
+        )
+
+        cv2.rectangle(
+            frame,
+            (x,y),
+            (x+w,y+h),
+            (255,0,0),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            name,
+            (x,y-10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255,0,0),
+            2
+        )
+
+    cv2.imshow(
+        "Attendance System",
+        frame
+    )
 
     if cv2.waitKey(1)==27:
         break
+
+
+cam.release()
+cv2.destroyAllWindows()
